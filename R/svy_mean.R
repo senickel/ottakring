@@ -9,7 +9,6 @@ svy_mean<-function(data,
                         svyset=NA
 ) {
   if (is.na(svyset)) stop("No svyset specified.")
-  if (is.null(options()$ottakring_stata_path)) options(ottakring_stata_path=find_stata_path())
 
 
   temp_folder<-reduce_data_and_temp_folder(data,mean_var,over,subpop,svyset)
