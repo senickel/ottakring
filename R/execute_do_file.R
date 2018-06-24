@@ -2,7 +2,8 @@
 #' @importFrom magrittr %>%
 #'
 execute_do_file<-function(path_to_do_file,log=FALSE) {
-  if (is.null(options()$ottakring_stata_path)) options(ottakring_stata_path=find_stata_path())
+  if (is.null(options()$ottakring_stata_path))
+    options(ottakring_stata_path=find_stata_path())
 
   path_to_stata15<-options()$ottakring_stata_path
 
