@@ -8,13 +8,16 @@ svy_mean<-function(data,
                         subpop=NA,
                         svyset=NA
 ) {
+  # check if svyset is specified
   if (is.na(svyset)) stop("No svyset specified.")
 
+  # check if data is a data.frame
+  if (!any(grepl("data.frame",is(data)))) stop("data is not of class data.frame")
 
   temp_folder<-reduce_data_and_temp_folder(data,mean_var,over,subpop,svyset)
 
   # create beginning of do file
-  do_file_step1<-c(paste0("clear all\nset maxvar 32000\nset more off\nglobal path \"",getwd(),"/",temp_folder,"/\""),
+  do_file_step1<-c(paste0("clear all\nset more off\nglobal path \"",getwd(),"/",temp_folder,"/\""),
                    "import delimited \"${path}data.csv\", delimiter(comma) bindquote(strict) varnames(1) case(preserve) clear",
                    svyset)
   if (!is.na(recodes)) do_file_step1<-c(do_file_step1,recodes)
@@ -42,7 +45,7 @@ svy_mean<-function(data,
     # clean up
     unlink(paste0(getwd(),"/",temp_folder),force = TRUE,recursive = TRUE)
 
-    stop("Execution failed. No Errorcode in Stata generated. Was the do file execute in Stata?")
+    stop("Execution failed. No Errorcode in Stata generated. Was the do file executed in Stata?")
   }
 
   check_error<-readLines(paste0(temp_folder,"/",mean_var,"_over_",over,".txt"),warn=FALSE)
