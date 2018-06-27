@@ -1,13 +1,16 @@
-#' svy_mean
-#' @importFrom magrittr %>%
+#' svy_reg
+#'
+#'
 
-svy_mean<-function(data,
-                        mean_var,
-                        over,
-                        recodes=NA,
-                        subpop=NA,
-                        svyset=NA
+svy_reg<-function(data,
+                   dv,
+                  ivs,
+                   recodes=NA,
+                   subpop=NA,
+                   svyset=NA
 ) {
+
+  # CHECKS ------------------------------------------------------------------
   # check if svyset is specified
   if (is.na(svyset)) stop("No svyset specified.")
 
@@ -19,10 +22,29 @@ svy_mean<-function(data,
   if (!all(apply(data,is.numeric)))
     stop("All columns need to be numeric.")
 
+  # check if data.frame
   if (!any(grepl("data.frame",is(data)))) stop("data is not of class data.frame")
 
+  # check if dv is vector with one character variable that is part of data
+  if (length(dv)!=1) stop("dv should be only one variable")
+  if (!"character"==is(dv)) stop("dv must be a character")
+  if (!dv==colnames(data)) stop("dv is not a variable in data")
 
-  temp_folder<-reduce_data_and_temp_folder(data)#,mean_var,over,subpop,svyset)
+  # check if iv is a vector with at least one character entry that is part of data
+  if (length(iv)<1) stop("dv should be one or more variables")
+  if (!"character"==is(iv)) stop("iv must be a character")
+  if (!all(iv%in%colnames(data))) stop("one or more iv is not a variable in data")
+
+
+  # START -------------------------------------------------------------------
+  temp_folder<-reduce_data_and_temp_folder(data)
+
+  dv<-dv %>%
+    gsub(".","",.,fixed = TRUE)
+  iv<-iv %>%
+    gsub("i.","i$",.,fixed=TRUE) %>%
+    gsub(".","",.,fixed = TRUE) %>%
+    gsub("i$","i.",.,fixed=TRUE)
 
   # create beginning of do file
   do_file_step1<-
@@ -39,25 +61,27 @@ svy_mean<-function(data,
 
   if (!is.na(recodes)) do_file_step1<-c(do_file_step1,recodes)
   do_file<-c(do_file_step1,
-             "program def write_mean_table\n	if  (missing(\"`3'\")) {
-capture svy: mean `1', over(`2')\n	}\n	else {
-             capture svy, subpop(if `3'): mean `1', over(`2')
-             }
-             if !_rc {
-             mat A = r(table)
-             mat2txt, matrix(A) saving(\"${path}/`1'_over_`2'.txt\") replace
-             }
-             else {\nlocal errorm = _rc
-             file open out1 using `\"${path}/`1'_over_`2'.txt\"', w replace
-             file write out1 \"errorcode: `errorm'\"
-             file close out1
-             }\nend\n")
-  if (is.na(subpop)) {
-    do_file<-c(do_file,paste("write_mean_table",mean_var,over))
-  } else {
-    do_file<-c(do_file,paste("write_mean_table",mean_var,over,subpop))
-  }
+             "program def write_reg_table\n	if  (missing(\"`3'\")) {
+             capture svy: reg `1' `2'\n	}\n	else {
+             capture svy, subpop(if `3'): mean reg `1' `2'
+}
+if !_rc {
+mat A = r(table)
+mat2txt, matrix(A) saving(\"${path}/reg_of_`1'.txt\") replace
+}
+else {\nlocal errorm = _rc
+file open out1 using `\"${path}//reg_of_`1'.txt\"', w replace
+file write out1 \"errorcode: `errorm'\"
+file close out1
+}\nend\n",paste("local ivs",paste0(iv,collapse=" ")))
+if (is.na(subpop)) {
+  do_file<-c(do_file,paste("write_reg_table",dv,"\"`ivs'\""))
+} else {
+  do_file<-c(do_file,paste("write_reg_table",dv,"\"`ivs'\"",subpop))
+}
   do_file2<-paste0(do_file,collapse="\n")
+
+
 
 
   # write do file
@@ -66,12 +90,13 @@ capture svy: mean `1', over(`2')\n	}\n	else {
   #write(do_file2,file1)
   close(file1)
 
+
   # execute do file
   execute_do_file(path_to_do_file = paste0(getwd(),"/",temp_folder,
                                            "/do_file.do"))
 
   # read in results
-  if (!file.exists(paste0(temp_folder,"/",mean_var,"_over_",over,".txt"))) {
+  if (!file.exists(paste0(temp_folder,"/reg_of_",dv,".txt"))) {
     # clean up
     unlink(paste0(getwd(),"/",temp_folder),force = TRUE,recursive = TRUE)
 
@@ -83,7 +108,7 @@ capture svy: mean `1', over(`2')\n	}\n	else {
   }
 
   check_error<-readLines(
-    paste0(temp_folder,"/",mean_var,"_over_",over,".txt"),warn=FALSE)
+    paste0(temp_folder,"/reg_of_",dv,".txt"),warn=FALSE)
   if (check_error %>% length==1&grepl("errorcode: ",check_error[1])) {
     # clean up
     unlink(paste0(getwd(),"/",temp_folder),force = TRUE,recursive = TRUE)
@@ -92,7 +117,7 @@ capture svy: mean `1', over(`2')\n	}\n	else {
                  gsub("errorcode: ","",.)))
 
   }
-  tab<-read.table(paste0(temp_folder,"/",mean_var,"_over_",over,".txt"))
+  tab<-read.table(paste0(temp_folder,"/reg_of_",dv,".txt"))
 
   # clean up
   unlink(paste0(getwd(),"/",temp_folder),force = TRUE,recursive = TRUE)
@@ -106,8 +131,4 @@ capture svy: mean `1', over(`2')\n	}\n	else {
     gsub(".","",.,fixed=TRUE)
   tab %>%
     dplyr::select(var,b,se,t,pvalue)
-
-  #
 }
-
-
