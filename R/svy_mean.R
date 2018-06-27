@@ -19,6 +19,9 @@ svy_mean<-function(data,
   if (!all(apply(data,is.numeric)))
     stop("All columns need to be numeric.")
 
+  if (!any(grepl("data.frame",is(data)))) stop("data is not of class data.frame")
+
+
   temp_folder<-reduce_data_and_temp_folder(data,mean_var,over,subpop,svyset)
 
   # create beginning of do file
@@ -29,6 +32,11 @@ svy_mean<-function(data,
       "import delimited \"${path}data.csv\", delimiter(comma)",
       " bindquote(strict) varnames(1) case(preserve) clear",
       svyset)
+
+  do_file_step1<-c(paste0("clear all\nset more off\nglobal path \"",getwd(),"/",temp_folder,"/\""),
+                   "import delimited \"${path}data.csv\", delimiter(comma) bindquote(strict) varnames(1) case(preserve) clear",
+                   svyset)
+
   if (!is.na(recodes)) do_file_step1<-c(do_file_step1,recodes)
   do_file<-c(do_file_step1,
              "program def write_mean_table\n	if  (missing(\"`3'\")) {
@@ -69,6 +77,9 @@ capture svy: mean `1', over(`2')\n	}\n	else {
 
     stop("Execution failed. No Errorcode in Stata generated.
          Was the do file executed in Stata?")
+
+    stop("Execution failed. No Errorcode in Stata generated. Was the do file executed in Stata?")
+
   }
 
   check_error<-readLines(
