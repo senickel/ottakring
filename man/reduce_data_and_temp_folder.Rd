@@ -4,8 +4,7 @@
 \alias{reduce_data_and_temp_folder}
 \title{reduce_data_and_temp_folder}
 \usage{
-reduce_data_and_temp_folder(data, mean_var, over, subpop = NA,
-  svyset = NULL)
+reduce_data_and_temp_folder(data)
 }
 \description{
 reduce_data_and_temp_folder

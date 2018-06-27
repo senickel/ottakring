@@ -1,8 +1,8 @@
 #' reduce_data_and_temp_folder
 #' @importFrom magrittr %>%
 
-reduce_data_and_temp_folder<-function(data,mean_var,over,subpop=NA,
-                                      svyset=NULL) {
+reduce_data_and_temp_folder<-function(data#,mean_var,over,subpop=NA,svyset=NULL
+                                      ) {
   # create random folder
   temp_folder<-paste0(sample(c(letters,LETTERS,0:9),10),collapse="")
   while(dir.exists(temp_folder)) temp_folder<-
